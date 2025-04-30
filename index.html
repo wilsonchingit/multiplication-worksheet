@@ -1,171 +1,149 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Multiplication Worksheet Maker</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 20px;
-      background-color: #f0f8ff;
-    }
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
-      background: #fff;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    h1 {
-      text-align: center;
-      color: #333;
-    }
-    .form-section {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      margin-bottom: 20px;
-    }
-    .form-group {
-      flex: 1;
-      min-width: 200px;
-      margin: 10px;
-    }
-    label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: bold;
-    }
-    input[type="number"] {
-      width: 100%;
-      padding: 8px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      border: none;
-      border-radius: 5px;
-      background-color: #4CAF50;
-      color: white;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #45a049;
-    }
-    .worksheet {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 40px;
-      padding: 20px;
-      border-top: 2px dashed #ccc;
-      margin-top: 20px;
-      font-size: 18px;
-    }
-    .column {
-      flex: 1;
-      min-width: 200px;
-    }
-    .question {
-      margin-bottom: 10px;
-    }
-    .download-btn {
-      margin-top: 20px;
-      text-align: center;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>🧠 Multiplication Worksheet Maker</h1>
+<script>
+  const generateBtn = document.getElementById('generateBtn');
+  const checkBtn = document.getElementById('checkBtn');
+  const preview = document.getElementById('worksheetPreview');
+  const greetingText = document.getElementById('greetingText');
+  const scoreSummary = document.getElementById('scoreSummary');
 
-    <div class="form-section">
-      <div class="form-group">
-        <label for="questionCount">Number of Questions:</label>
-        <input type="number" id="questionCount" min="1" value="50">
-      </div>
-      <div class="form-group">
-        <label>Table Range:</label>
-        <span>2 ➡️ 12</span>
-      </div>
-      <div class="form-group">
-        <label>&nbsp;</label>
-        <button id="generateBtn">Generate Worksheet</button>
-      </div>
-    </div>
+  function getRandomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
 
-    <div class="worksheet" id="worksheetPreview">
-      <!-- Questions will appear here -->
-    </div>
-
-    <div class="download-btn">
-      <button id="downloadBtn">⭳ Download PDF</button>
-    </div>
-  </div>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script>
-    const generateBtn = document.getElementById('generateBtn');
-    const downloadBtn = document.getElementById('downloadBtn');
-    const preview = document.getElementById('worksheetPreview');
-
-    function getRandomInt(min, max) {
-      return Math.floor(Math.random() * (max - min + 1)) + min;
+  function generateQuestions(count) {
+    const questions = [];
+    for (let i = 0; i < count; i++) {
+      const a = getRandomInt(2, 12);
+      const b = getRandomInt(2, 12);
+      questions.push({ id: i + 1, a, b, answer: a * b });
     }
+    return questions;
+  }
 
-    function generateQuestions(count) {
-      const questions = [];
-      for (let i = 0; i < count; i++) {
-        const a = getRandomInt(2, 12);
-        const b = getRandomInt(2, 12);
-        questions.push(`${i + 1}. ${a} x ${b} = _______`);
+  function renderWorksheet(questions, checkMode = false) {
+    preview.innerHTML = '';
+    scoreSummary.textContent = '';
+    let column;
+    for (let i = 0; i < questions.length; i++) {
+      if (i % 20 === 0) {
+        column = document.createElement('div');
+        column.className = 'column';
+        preview.appendChild(column);
       }
-      return questions;
+      const div = document.createElement('div');
+      div.className = 'question';
+      if (checkMode) {
+        div.innerHTML = `${questions[i].id}. ${questions[i].a} x ${questions[i].b} = <input type='number' data-answer='${questions[i].answer}' style='width:60px;'> <span class='feedback'></span>`;
+      } else {
+        div.textContent = `${questions[i].id}. ${questions[i].a} x ${questions[i].b} = _______`;
+      }
+      column.appendChild(div);
     }
+  }
 
-    function renderWorksheet(questions) {
-      preview.innerHTML = '';
-      let column;
-      for (let i = 0; i < questions.length; i++) {
-        if (i % 20 === 0) {
-          column = document.createElement('div');
-          column.className = 'column';
-          preview.appendChild(column);
+  generateBtn.addEventListener('click', () => {
+    const name = document.getElementById('childName').value || 'there';
+    greetingText.textContent = `Hi ${name}, let’s play with numbers today!`;
+
+    const count = parseInt(document.getElementById('questionCount').value, 10);
+    const questions = generateQuestions(count);
+    window.generatedQuestions = questions;
+    renderWorksheet(questions);
+    resetTimer();
+  });
+
+  checkBtn.addEventListener('click', () => {
+    renderWorksheet(window.generatedQuestions || [], true);
+
+    setTimeout(() => {
+      const inputs = preview.querySelectorAll('input[type="number"]');
+      let correctCount = 0;
+      inputs.forEach(input => {
+        const correct = parseInt(input.dataset.answer);
+        const userAnswer = parseInt(input.value);
+        const feedback = input.nextElementSibling;
+
+        if (!isNaN(userAnswer)) {
+          if (userAnswer === correct) {
+            feedback.textContent = '✔️';
+            feedback.className = 'feedback correct';
+            correctCount++;
+          } else {
+            feedback.textContent = `❌ (${correct})`;
+            feedback.className = 'feedback wrong';
+          }
+        } else {
+          feedback.textContent = '';
         }
-        const div = document.createElement('div');
-        div.className = 'question';
-        div.textContent = questions[i];
-        column.appendChild(div);
-      }
-    }
+      });
+      scoreSummary.textContent = `You got ${correctCount} out of ${inputs.length} correct! 🎉`;
+    }, 100);
+  });
 
-    generateBtn.addEventListener('click', () => {
-      const count = parseInt(document.getElementById('questionCount').value, 10);
-      const questions = generateQuestions(count);
-      renderWorksheet(questions);
-    });
+  // Timer logic
+  let timer = 0;
+  let timerInterval = null;
+  const timerDisplay = document.getElementById('timerDisplay');
 
+  function resetTimer() {
+    clearInterval(timerInterval);
+    timer = 0;
+    timerDisplay.textContent = '0s';
+    timerInterval = setInterval(() => {
+      timer++;
+      timerDisplay.textContent = timer + 's';
+    }, 1000);
+  }
+
+  resetTimer();
+</script>
+
+// JavaScript update to include student info in PDF
     downloadBtn.addEventListener('click', () => {
       const { jsPDF } = window.jspdf;
+      const name = document.getElementById('childName').value || '';
+      const age = document.getElementById('childAge').value || '';
+      const date = document.getElementById('todayDate').value || '';
+      const school = document.getElementById('schoolName').value || '';
+
       html2canvas(preview).then(canvas => {
         const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF('p', 'pt', 'a4');
         const pageWidth = pdf.internal.pageSize.getWidth();
         const pageHeight = pdf.internal.pageSize.getHeight();
 
+        // Add student information and title at top
+        pdf.setFontSize(16);
+        pdf.setFont(undefined, 'bold');
+        pdf.text("📚 Multiplication Worksheet", 40, 40);
+
+        pdf.setFontSize(12);
+        pdf.setFont(undefined, 'normal');
+        pdf.text(`Name:`, 40, 60);
+        pdf.setFont(undefined, 'bold');
+        pdf.text(`${name}`, 100, 60);
+
+        pdf.setFont(undefined, 'normal');
+        pdf.text(`Age:`, 40, 80);
+        pdf.setFont(undefined, 'bold');
+        pdf.text(`${age}`, 100, 80);
+
+        pdf.setFont(undefined, 'normal');
+        pdf.text(`School:`, 40, 100);
+        pdf.setFont(undefined, 'bold');
+        pdf.text(`${school}`, 100, 100);
+
+        pdf.setFont(undefined, 'normal');
+        pdf.text(`Date:`, 40, 120);
+        pdf.setFont(undefined, 'bold');
+        pdf.text(`${date}`, 100, 120);
+
+        pdf.setDrawColor(150);
+        pdf.line(40, 130, pageWidth - 40, 130);
+
         const imgProps = pdf.getImageProperties(imgData);
-        const ratio = pageWidth / imgProps.width;
+        const ratio = (pageWidth - 80) / imgProps.width;
         const imgHeight = imgProps.height * ratio;
 
-        pdf.addImage(imgData, 'PNG', 0, 20, pageWidth, imgHeight);
+        pdf.addImage(imgData, 'PNG', 40, 140, pageWidth - 80, imgHeight);
         pdf.save('multiplication-worksheet.pdf');
       });
-    });
-  </script>
-</body>
-</html>
